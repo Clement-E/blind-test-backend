@@ -11,7 +11,8 @@ const PORT = process.env.PORT || 3001;
 app.use(cors({
   origin: [
     'http://localhost:5173', // dev local React
-    'https://blind-test-one.vercel.app' // production
+    'https://blind-test-one.vercel.app', // production
+    'https://blind-test-git-main-clement-es-projects.vercel.app'
   ],
 }));
 
