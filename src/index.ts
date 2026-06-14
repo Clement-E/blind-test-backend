@@ -1,5 +1,7 @@
+import { createServer } from 'http';
 import playersRouter from './routes/players';
 import spotifyRouter from './routes/spotify';
+import { setupWebSocket } from './websocket';
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
@@ -25,7 +27,10 @@ app.get('/', (_req, res) => {
   res.json({ status: 'ok' });
 });
 
-app.listen(PORT, () => {
+const server = createServer(app);
+setupWebSocket(server);
+
+server.listen(PORT, () => {
   console.log(`Serveur démarré sur le port ${PORT}`);
   console.log(`Spotify login → http://localhost:${PORT}/api/spotify/login`);
 });
