@@ -1,5 +1,6 @@
 import { createServer } from 'http';
 import playersRouter from './routes/players';
+import gamesRouter from './routes/games';
 import spotifyRouter from './routes/spotify';
 import { setupWebSocket } from './websocket';
 import express from 'express';
@@ -21,6 +22,7 @@ app.use(cors({
 
 app.use(express.json());
 app.use('/api/players', playersRouter);
+app.use('/api/games', gamesRouter);
 app.use('/api/spotify', spotifyRouter);
 
 app.get('/', (_req, res) => {
