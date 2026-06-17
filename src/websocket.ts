@@ -21,12 +21,21 @@ function send(ws: WebSocket, data: object) {
 export function setupWebSocket(server: Server) {
   const wss = new WebSocketServer({ server })
 
+  const keepAlive = setInterval(() => {
+    wss.clients.forEach((ws) => {
+      if (ws.readyState === WebSocket.OPEN) ws.ping()
+    })
+  }, 30_000)
+
+  wss.on('close', () => clearInterval(keepAlive))
+
   wss.on('connection', (ws) => {
     let gameId: string | null = null
     let role: 'master' | 'player' | null = null
     let playerId: string | null = null
 
     ws.on('message', (raw) => {
+      if (raw.toString() === 'pong') return
       let msg: Record<string, any>
       try { msg = JSON.parse(raw.toString()) } catch { return }
 
