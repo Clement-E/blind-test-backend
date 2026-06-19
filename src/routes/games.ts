@@ -55,7 +55,8 @@ router.post('/', async (req: Request, res: Response) => {
     if (!result) return res.status(500).json({ error: 'Impossible de générer un code unique' })
     res.status(201).json(result.rows[0])
   } catch (err: any) {
-    res.status(500).json({ error: err.message })
+    console.error('[POST /api/games]', err)
+    res.status(500).json({ error: err.message, detail: err.detail ?? err.code ?? String(err) })
   }
 })
 
