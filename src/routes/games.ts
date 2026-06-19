@@ -15,6 +15,16 @@ router.get('/', async (_req: Request, res: Response) => {
   }
 })
 
+router.get('/code/:code', async (req: Request, res: Response) => {
+  try {
+    const result = await pool.query('SELECT * FROM games WHERE code = $1', [req.params.code])
+    if (result.rows.length === 0) return res.status(404).json({ error: 'Partie non trouvée' })
+    res.json(result.rows[0])
+  } catch (err: any) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
 router.get('/:id', async (req: Request, res: Response) => {
   try {
     const result = await pool.query('SELECT * FROM games WHERE id = $1', [req.params.id])
@@ -27,11 +37,22 @@ router.get('/:id', async (req: Request, res: Response) => {
 
 router.post('/', async (req: Request, res: Response) => {
   try {
-    const { id, playlist_url, status = 'waiting' } = req.body
-    const result = await pool.query(
-      'INSERT INTO games (id, playlist_url, status) VALUES ($1, $2, $3) RETURNING *',
-      [id, playlist_url, status]
-    )
+    const { playlist_url, status = 'waiting' } = req.body
+    let result
+    for (let attempt = 0; attempt < 10; attempt++) {
+      const code = String(Math.floor(100000 + Math.random() * 900000))
+      try {
+        result = await pool.query(
+          'INSERT INTO games (code, playlist_url, status) VALUES ($1, $2, $3) RETURNING *',
+          [code, playlist_url, status]
+        )
+        break
+      } catch (err: any) {
+        if (err.code === '23505') continue // collision sur le code, on retente
+        throw err
+      }
+    }
+    if (!result) return res.status(500).json({ error: 'Impossible de générer un code unique' })
     res.status(201).json(result.rows[0])
   } catch (err: any) {
     res.status(500).json({ error: err.message })
@@ -89,7 +110,9 @@ router.get('/:id/players', async (req: Request, res: Response) => {
 router.post('/:id/players/:playerId', async (req: Request, res: Response) => {
   try {
     const result = await pool.query(
-      'INSERT INTO game_players (game_id, player_id, score) VALUES ($1, $2, 0) RETURNING *',
+      `INSERT INTO game_players (game_id, player_id, score) VALUES ($1, $2, 0)
+       ON CONFLICT (game_id, player_id) DO NOTHING
+       RETURNING *`,
       [req.params.id, req.params.playerId]
     )
     res.status(201).json(result.rows[0])

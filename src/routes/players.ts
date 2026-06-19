@@ -13,6 +13,21 @@ router.get('/', async (_req: Request, res: Response) => {
   }
 })
 
+router.post('/upsert', async (req: Request, res: Response) => {
+  try {
+    const { email, username } = req.body
+    const result = await pool.query(
+      `INSERT INTO players (email, username) VALUES ($1, $2)
+       ON CONFLICT (email) DO UPDATE SET username = EXCLUDED.username
+       RETURNING *`,
+      [email, username]
+    )
+    res.json(result.rows[0])
+  } catch (err: any) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
 router.get('/:id', async (req: Request, res: Response) => {
   try {
     const result = await pool.query('SELECT * FROM players WHERE id = $1', [req.params.id])
