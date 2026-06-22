@@ -152,4 +152,39 @@ router.delete('/:id/players/:playerId', async (req: Request, res: Response) => {
   }
 })
 
+// ─── game_guesses sub-resource ───────────────────────────────────────────────
+
+// GET /api/games/:id/guesses
+router.get('/:id/guesses', async (req: Request, res: Response) => {
+  try {
+    const result = await pool.query(
+      `SELECT gg.id, gg.player_id, p.username, gg.track_uri, gg.track_name, gg.artist_name, gg.guessed_at
+       FROM game_guesses gg
+       JOIN players p ON p.id = gg.player_id
+       WHERE gg.game_id = $1
+       ORDER BY gg.guessed_at ASC`,
+      [req.params.id]
+    )
+    res.json(result.rows)
+  } catch (err: any) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+// POST /api/games/:id/guesses
+router.post('/:id/guesses', async (req: Request, res: Response) => {
+  try {
+    const { player_id, track_uri, track_name, artist_name } = req.body
+    const result = await pool.query(
+      `INSERT INTO game_guesses (game_id, player_id, track_uri, track_name, artist_name)
+       VALUES ($1, $2, $3, $4, $5)
+       RETURNING *`,
+      [req.params.id, player_id, track_uri, track_name, artist_name]
+    )
+    res.status(201).json(result.rows[0])
+  } catch (err: any) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
 export default router
