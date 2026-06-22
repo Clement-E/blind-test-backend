@@ -33,6 +33,7 @@ export function setupWebSocket(server: Server) {
     let gameId: string | null = null
     let role: 'master' | 'player' | null = null
     let playerId: string | null = null
+    let dbPlayerId: string | null = null
 
     ws.on('message', (raw) => {
       if (raw.toString() === 'pong') return
@@ -49,9 +50,10 @@ export function setupWebSocket(server: Server) {
             send(ws, { type: 'joined', playerId: null })
           } else {
             playerId = randomUUID()
+            dbPlayerId = msg.dbPlayerId ?? null
             room.players.set(playerId, ws)
             send(ws, { type: 'joined', playerId })
-            if (room.master) send(room.master, { type: 'player_joined', playerId })
+            if (room.master) send(room.master, { type: 'player_joined', playerId, dbPlayerId })
           }
           break
         }
@@ -104,7 +106,7 @@ export function setupWebSocket(server: Server) {
         room.master = null
       } else if (playerId) {
         room.players.delete(playerId)
-        if (room.master) send(room.master, { type: 'player_left', playerId })
+        if (room.master) send(room.master, { type: 'player_left', playerId, dbPlayerId })
       }
       if (!room.master && room.players.size === 0) rooms.delete(gameId)
     })
